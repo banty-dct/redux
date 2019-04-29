@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title></title>
+</head>
+
+<body>
+    <div id="root">
+    </div>
+
+    <!-- https://unpkg.com/react@16.7.0/umd/react.development.js -->
+    <script src="./js/react.development.js"></script>
+    <!-- https://unpkg.com/react-dom@16.7.0/umd/react-dom.development.js -->
+    <script src="./js/react-dom.development.js"></script>
+    <script src="./js/babel.js"></script>
+    <!-- <script src="./js/redux.min.js"></script> -->
+    <script src="./js/redux.js"></script>
+    <script src="http://wzrd.in/standalone/uuid%2Fv4@latest"></script>
+
+    <script type="text/babel">
+        const rootHandle = document.getElementById('root')
+
+        // Redux Code ////////////////////////////////
+        const { createStore, combineReducers } = Redux 
+
+        // Reducer Code //////////////////////////////
+        const clientsInitialState = [
+            { id: uuidv4(), name: 'Venson Electric', email: 'venson@gmail.com' }, 
+            { id: uuidv4(), name: 'Subhash Stores', email: 'subhash@gmail.com'}
+        ]
+        const clientsReducer = (state = clientsInitialState, action) => {
+            switch(action.type) {
+                case 'ADD_CLIENT' : 
+                    return [...state, action.payload]
+                case 'REMOVE_CLIENT' : 
+                    return state.filter(client => client.id != action.payload)
+                case 'EDIT_CLIENT' : 
+                    return state.map(client => {
+                        if(client.id == action.payload.id){
+                            return {...client, ...action.payload.client }
+                            // return Object.assign({}, client, action.payload.client)
+                        } else {
+                            return {...client}
+                        }
+                    })
+                default: 
+                    return [...state]
+                    // return [].concat(state) - es5
+            }
+        }
+
+        // Action Generator 
+        const addClient = (client) => {
+            return {
+                type: 'ADD_CLIENT',
+                payload: client
+            }
+        }
+        const removeClient = (id) => {
+            return {
+                type: 'REMOVE_CLIENT',
+                payload: id
+            }
+        }
+
+        const store = createStore(combineReducers({
+             clients: clientsReducer
+        }))
+
+        store.subscribe(() => {
+            ReactDOM.render(<App />, rootHandle)
+        })
+
+        // REACT CODE ////////////////////////////////
+        class App extends React.Component {
+            render() {
+                return (
+                    <div>
+                        <h1> PM App </h1>
+                        <ClientModule /> 
+                        <ProjectModule />
+                    </div> 
+                )
+            }
+        }
+
+        const ClientModule = (props) => {
+            return (
+                <div> 
+                    <ClientList />
+                    <ClientForm />
+                </div> 
+            )
+        }
+
+        const ClientList = (props) => {
+            const { clients } = store.getState()
+            return (
+                <div> 
+                    <h2>Listing Clients - { clients.length }</h2> 
+                    <ul>
+                        { clients.map(client => <li key={client.id}>{ client.name } <button onClick={() => { 
+                            const confirm = window.confirm("Are you sure?")
+                            if(confirm) {
+                                store.dispatch(removeClient(client.id))
+                            }
+                        }}> remove </button> </li>)}
+                    </ul>
+                </div> 
+            )
+        }
+
+        class ClientForm extends React.Component {
+            constructor(){
+                super()
+                this.state = {
+                    id: '',
+                    name: '',
+                    email: ''
+                }
+            }
+
+            handleChange = (e) => {
+                e.persist()
+                this.setState(() => ({
+                    [e.target.name]: e.target.value 
+                }))
+            }
+
+            handleSubmit = (e) => {
+                e.preventDefault() 
+                const formData = {
+                    id: uuidv4(), 
+                    name: this.state.name, 
+                    email: this.state.email 
+                }
+                console.log(formData)
+                props.dispatch()
+                store.dispatch(addClient(formData))
+                this.setState(() => ({
+                    id: '',
+                    name: '',
+                    email: ''
+                }))
+            }
+
+            render() {
+                return (
+                    <div>
+                        <h2>Add Client </h2> 
+                        <form onSubmit={this.handleSubmit}>  
+                            <label> 
+                                name 
+                                <input type="text"
+                                       name="name" 
+                                       value={this.state.name} 
+                                       onChange={this.handleChange} 
+                                />
+                            </label> <br/>
+                            
+                            <label> 
+                                email 
+                                <input type="text"
+                                       name="email" 
+                                       value={this.state.email} 
+                                       onChange={this.handleChange} 
+                                />
+                            </label> <br/>
+
+                            <input type="submit" />
+                        </form> 
+                    </div> 
+                )
+            }
+        }
+
+        const ProjectModule = (props) => {
+            return (
+                <div> 
+                    Project Module
+                    <ProjectList />
+                </div> 
+            )
+        }
+
+        const ProjectList = (props) => {
+            return (
+                <div> 
+                    <h2>Listing Projects </h2> 
+                </div> 
+            )
+        }
+
+        ReactDOM.render(<App />, rootHandle)
+    </script>
+</body>
+
+</html>
